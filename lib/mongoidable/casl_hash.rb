@@ -4,17 +4,26 @@
 module Mongoidable
   class CaslHash < Hash
     def initialize(rule)
-      self.actions = rule
+      self.action = rule
       self.subject = rule
       self.conditions = rule
       self.inverted = rule
       self.block = rule
+      self.source = rule
+      self[:description] = rule.actions.map do |action|
+        I18n.t("mongoidable.ability.description.#{action}", subject: self[:subject])
+      end.join("/")
+      self[:type] = rule.rule_type
     end
 
     private
 
-    def actions=(rule)
-      self[:actions] = rule.actions
+    def action=(rule)
+      self[:action] = rule.actions
+    end
+
+    def source=(rule)
+      self[:source] = rule.rule_source.presence
     end
 
     def subject=(rule)

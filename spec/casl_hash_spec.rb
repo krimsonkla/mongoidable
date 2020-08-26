@@ -6,7 +6,7 @@ RSpec.describe "casl_hash" do
   it "sets the action" do
     rule = CanCan::Rule.new(false, :action, User)
     hash = Mongoidable::CaslHash.new(rule)
-    expect(hash[:actions]).to eq [:action]
+    expect(hash[:action]).to eq [:action]
   end
   it "sets the subject when a symbol" do
     rule = CanCan::Rule.new(false, :action, :subject)
@@ -43,13 +43,5 @@ RSpec.describe "casl_hash" do
     rule = CanCan::Rule.new(false, :action, User)
     hash = Mongoidable::CaslHash.new(rule)
     expect(hash).not_to be_key(:block)
-  end
-
-  it "adds the block as js when present" do
-    rule = CanCan::Rule.new(false, :action, User) do
-      1 + 1
-    end
-    hash = Mongoidable::CaslHash.new(rule)
-    expect(hash[:block]).to eq "var rule = new CanCan.Rule(false, \"action\", User, function() {\n  return 1 + 1\n})"
   end
 end

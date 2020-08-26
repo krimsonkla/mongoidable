@@ -24,8 +24,8 @@ module Mongoidable
 
     embedded_in :instance_abilities
 
-    def to_a
-      [action, subject, extra]
+    def description
+      I18n.t("mongoidable.ability.description.#{action}", subject: self[:subject])
     end
   end
 end
