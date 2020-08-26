@@ -36,4 +36,38 @@ RSpec.describe "class_abilities" do
   it "does not allow sort order for singular relations" do
     expect { User.inherits_abilities_from(:parent1, order_by: :id) }.to raise_error(ArgumentError)
   end
+
+  it "checks abilities for included modules" do
+    model = Modules.new
+    allow(model).to receive(:mongoidable_identity).and_return({})
+    expect(model.current_ability.to_casl_list).to eq(
+        [
+            {
+                action:      [:do_included_stuff],
+                subject:     ["User"],
+                has_block:   false,
+                source:      nil,
+                description: "translation missing: en.mongoidable.ability.description.do_included_stuff",
+                type:        :static
+            },
+            {
+                action:      [:do_own_stuff],
+                subject:     ["User"],
+                has_block:   false,
+                source:      nil,
+                description: "translation missing: en.mongoidable.ability.description.do_own_stuff",
+                type:        :static
+            },
+            {
+                action:      [:do_other_own_stuff],
+                subject:     ["User"],
+                inverted:    true,
+                has_block:   false,
+                source:      nil,
+                description: "translation missing: en.mongoidable.ability.description.do_other_own_stuff",
+                type:        :static
+            }
+        ]
+      )
+  end
 end
