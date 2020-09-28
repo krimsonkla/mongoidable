@@ -2,6 +2,7 @@
 
 require "rails_helper"
 require "cancan/matchers"
+
 RSpec.describe "current_ability" do
   it "classes properly inherit relations in derived classes" do
     parent_1 = Parent1.new
@@ -116,5 +117,54 @@ RSpec.describe "current_ability" do
 
     User.inherits_abilities_from_many :embedded_parents, :id
     expect(user.current_ability.cannot?(:override_thing, User)).to eq true
+  end
+
+  it "passes the relations parent model to define abilities" do
+    user = User.new
+    parent = Parent1.new(id: 1)
+    user.embedded_parents << parent
+    User.inherits_abilities_from_many :embedded_parents, :id, :asc
+
+    expect(User.ability_definition.first).to receive(:call) do |_abilities, model|
+      expect(model.parent_model).to eq nil
+    end
+    expect(Parent1.ability_definition.first).to receive(:call) do |_abilities, model|
+      expect(model.parent_model).to eq user
+    end
+
+    user.current_ability
+  end
+
+  describe "caching" do
+    before(:each) do
+      allow(Mongoidable.configuration).to receive(:enable_caching).and_return true
+    end
+
+    it "uses cache if enabled" do
+      user = CacheModel.create
+      result = user.current_ability.to_casl_list
+      expect(user).not_to receive(:add_inherited_abilities)
+      expect(user.current_ability.to_casl_list).to eq result
+    end
+
+    it "can use a rule with block after loading from cache" do
+      thing_in_block_binding_context = "1"
+      CacheModel.define_abilities do |abilities, _user|
+        abilities.can :do_stuff_to_other_user, User do |other_user|
+          other_user.id == thing_in_block_binding_context
+        end
+      end
+      current_user = CacheModel.create
+      other_user = User.new(id: "1")
+      current_user.current_ability
+      expect(current_user.current_ability).to be_able_to(:do_stuff_to_other_user, other_user)
+    end
+
+    it "calling current_ability with skip_cache: true skips caching" do
+      user = CacheModel.create
+      user.current_ability
+      expect(user).to receive(:add_inherited_abilities)
+      user.current_ability(skip_cache: true)
+    end
   end
 end
