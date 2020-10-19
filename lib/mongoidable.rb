@@ -2,18 +2,20 @@
 
 require "mongoid"
 require "cancan"
-require "cancan/model_adapters/active_record_5_adapter"
+require "cancan/model_adapters/active_record_adapter"
 require "cancan/model_adapters/active_record_4_adapter"
+require "cancan/model_adapters/active_record_5_adapter"
 require "cancancan/mongoid"
 require "memoist"
 require "method_source"
 require "ruby2js"
 require "ruby2js/filter/return"
 
-require "mongoidable/active_record_disabler"
+require "mongoidable/cancan/active_record_disabler"
 require "mongoidable/rule"
 
 require "mongoidable/casl_hash"
+require "mongoidable/casl_list"
 require "mongoidable/class_abilities"
 require "mongoidable/class_type"
 require "mongoidable/configuration"
