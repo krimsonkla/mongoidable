@@ -42,7 +42,7 @@ module Mongoidable
       arguments = if subject_as_class.is_a?(Symbol) || extra.blank?
                     [action, subject_as_class]
                   else
-                    [action, subject_as_class.new(extra.first)]
+                    [action, subject_as_class, extra.first]
                   end
       parent_document.current_ability.can?(*arguments) != base_behavior
     end
@@ -85,7 +85,7 @@ module Mongoidable
     end
 
     def ability_type
-      Ability.from_value(action) || parent_document.class.default_ability
+      Mongoidable::Ability.from_value(action) || parent_document.class.default_ability
     end
   end
 end
