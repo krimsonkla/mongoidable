@@ -32,7 +32,9 @@ module Mongoidable
     end
 
     def conditions=(rule)
-      self[:conditions] = rule.conditions if rule.conditions.present?
+      return if rule.conditions.blank?
+
+      self[:conditions] = rule.conditions.deep_transform_keys { |key| key.to_s.camelize(:lower).to_sym }
     end
 
     def inverted=(rule)
