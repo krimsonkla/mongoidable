@@ -39,12 +39,12 @@ module Mongoidable
 
     def should_update?
       # If the ability change includes model attributes new up a model with those attributes to check
-      arguments = if subject_as_class.is_a?(Symbol) || extra.blank?
-                    [action, subject_as_class]
-                  else
-                    [action, subject_as_class, extra.first]
-                  end
-      parent_document.current_ability.can?(*arguments) != base_behavior
+      can_args = if subject_as_class.is_a?(Symbol) || extra.blank?
+                   [action, subject_as_class]
+                 else
+                   [action, subject_as_class.new(extra.first)]
+                 end
+      parent_document.current_ability.can?(*can_args) != base_behavior
     end
 
     def ability_exists?

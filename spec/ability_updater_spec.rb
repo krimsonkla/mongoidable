@@ -4,11 +4,12 @@ require "rails_helper"
 
 RSpec.describe Mongoidable::AbilityUpdater do
   let(:user) { User.new }
+  let(:model) { self.class::Model.create }
+
   class self::Model
     include Mongoid::Document
     include Mongoidable::Document
   end
-  let(:model) { self.class::Model.create }
 
   it "creates an ability if necessary" do
     updater = Mongoidable::AbilityUpdater.new(model, { action: :action, subject: :subject, base_behavior: true })
@@ -47,38 +48,63 @@ RSpec.describe Mongoidable::AbilityUpdater do
 
   it "does nothing when adding same ability with extra args" do
     model.instance_abilities.create(
-      action: :action,
-      subject: User,
-      base_behavior: true,
-      extra:         [{ id: user.id }])
+        action:        :action,
+        subject:       User,
+        base_behavior: true,
+        extra:         [{ id: user.id }]
+      )
 
     expect(model.current_ability).to be_can(:action, user)
 
     updater = Mongoidable::AbilityUpdater.new(model, {
-      action: :action,
-      subject: User,
-      base_behavior: true,
-      extra: [{ id: user.id }]})
+                                                  action:        :action,
+                                                  subject:       User,
+                                                  base_behavior: true,
+                                                  extra:         [{ id: user.id }]
+                                              })
     updater.call
 
     expect(model.current_ability).to be_can(:action, user)
     expect(model.instance_abilities.first).to be
+    expect(model.instance_abilities.count).to eq 1
   end
 
   it "does nothing when adding same ability with extra merge args" do
     model.instance_abilities.create(
-      action: :action,
-      subject: User,
-      base_behavior: true,
-      extra:         [{ id: "merge|user.id" }])
+        action:        :manage,
+        subject:       User,
+        base_behavior: true,
+        extra:         [{ id: "merge|organization.user.id" }]
+      )
 
     updater = Mongoidable::AbilityUpdater.new(model, {
-      action: :action,
-      subject: User,
-      base_behavior: true,
-      extra: [{ id: "merge|user.id" }]})
+                                                  action:        :action,
+                                                  subject:       User,
+                                                  base_behavior: true,
+                                                  extra:         [{ id: "merge|organization.user.id" }]
+                                              })
     updater.call
 
     expect(model.instance_abilities.first).to be
+    expect(model.instance_abilities.count).to eq 1
+  end
+
+  it "adds the ability if the extra merge args are different" do
+    model.instance_abilities.create(
+        action:        :manage,
+        subject:       User,
+        base_behavior: true,
+        extra:         [{ id: "merge|organization.user.id" }]
+      )
+
+    updater = Mongoidable::AbilityUpdater.new(model, {
+                                                  action:        :manage,
+                                                  subject:       User,
+                                                  base_behavior: true,
+                                                  extra:         [{ id: "merge|user.id" }]
+                                              })
+    updater.call
+
+    expect(model.instance_abilities.count).to eq 2
   end
 end
