@@ -95,11 +95,11 @@ module Mongoidable
         key  = "_id" if key.to_s == "id"
         type = object.fields[key].type
         if type == Array
-          object.update_attribute(key, Array.wrap(value))
+          object.assign_attributes(key => Array.wrap(value))
         elsif type == Mongoid::Document
           transform_values(object[key], value)
         else
-          object.update_attribute(key, value)
+          object.assign_attributes(key => value)
         end
       end
     end
