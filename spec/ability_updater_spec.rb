@@ -4,11 +4,12 @@ require "rails_helper"
 
 RSpec.describe Mongoidable::AbilityUpdater do
   let(:user) { User.new }
+  let(:model) { self.class::Model.create }
+
   class self::Model
     include Mongoid::Document
     include Mongoidable::Document
   end
-  let(:model) { self.class::Model.create }
 
   it "creates an ability if necessary" do
     updater = Mongoidable::AbilityUpdater.new(model, { action: :action, subject: :subject, base_behavior: true })
@@ -47,38 +48,79 @@ RSpec.describe Mongoidable::AbilityUpdater do
 
   it "does nothing when adding same ability with extra args" do
     model.instance_abilities.create(
-      action: :action,
-      subject: User,
-      base_behavior: true,
-      extra:         [{ id: user.id }])
+        action:        :action,
+        subject:       User,
+        base_behavior: true,
+        extra:         [{ id: user.id }]
+      )
 
     expect(model.current_ability).to be_can(:action, user)
 
     updater = Mongoidable::AbilityUpdater.new(model, {
-      action: :action,
-      subject: User,
-      base_behavior: true,
-      extra: [{ id: user.id }]})
+                                                  action:        :action,
+                                                  subject:       User,
+                                                  base_behavior: true,
+                                                  extra:         [{ id: user.id }]
+                                              })
     updater.call
 
     expect(model.current_ability).to be_can(:action, user)
     expect(model.instance_abilities.first).to be
+    expect(model.instance_abilities.count).to eq 1
   end
 
   it "does nothing when adding same ability with extra merge args" do
     model.instance_abilities.create(
-      action: :action,
-      subject: User,
-      base_behavior: true,
-      extra:         [{ id: "merge|user.id" }])
+        action:        :manage,
+        subject:       User,
+        base_behavior: true,
+        extra:         [{ id: "merge|organization.user.id" }]
+      )
 
     updater = Mongoidable::AbilityUpdater.new(model, {
-      action: :action,
-      subject: User,
-      base_behavior: true,
-      extra: [{ id: "merge|user.id" }]})
+                                                  action:        :action,
+                                                  subject:       User,
+                                                  base_behavior: true,
+                                                  extra:         [{ id: "merge|organization.user.id" }]
+                                              })
     updater.call
 
     expect(model.instance_abilities.first).to be
+    expect(model.instance_abilities.count).to eq 1
+  end
+
+  it "adds the ability if the extra merge args are different" do
+    model.instance_abilities.create(
+        action:        :manage,
+        subject:       User,
+        base_behavior: true,
+        extra:         [{ id: "merge|organization.user.id" }]
+      )
+
+    updater = Mongoidable::AbilityUpdater.new(model, {
+                                                  action:        :manage,
+                                                  subject:       User,
+                                                  base_behavior: true,
+                                                  extra:         [{ id: "merge|user.id" }]
+                                              })
+    updater.call
+
+    expect(model.instance_abilities.count).to eq 2
+  end
+
+  it "can store and check array type attributes" do
+    user_1      = User.create(ids: [1, 2, 3, 4])
+    user_2      = User.create(ids: [1])
+    manage_user = User.create
+    manage_user.instance_abilities.create! base_behavior: true, action: :an_action, subject: User, extra: [{ ids: 1 }]
+    expect(manage_user.current_ability.can?(:an_action, user_1)).to be_truthy
+    expect(manage_user.current_ability.can?(:an_action, user_2)).to be_truthy
+
+    expect do
+      manage_user.instance_abilities.update_ability base_behavior: true, action: :an_action, subject: User, extra: [{ ids: 1 }]
+    end.not_to(change { manage_user.reload.instance_abilities.count })
+
+    expect(manage_user.current_ability.can?(:an_action, user_1)).to be_truthy
+    expect(manage_user.current_ability.can?(:an_action, user_2)).to be_truthy
   end
 end
