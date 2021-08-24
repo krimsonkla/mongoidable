@@ -7,6 +7,8 @@ module Mongoidable
 
     # rubocop:disable Metrics/BlockLength
     class_methods do
+      extend Memoist
+
       # The static abilities of this class and abilities inherited from base classes
       def define_abilities(&block)
         ability_definition << block.to_proc
@@ -27,7 +29,8 @@ module Mongoidable
       end
 
       def accepts_policies(as:)
-        embeds_many as, class_name: "Mongoidable::PolicyRelation"
+        embeds_many as, class_name: "Mongoidable::PolicyRelation", after_add: :renew_policies, after_remove: :renew_policies
+
         Mongoidable::PolicyRelation.embedded_in as
         Mongoidable::Policy.possible_types.concat([name.downcase]).uniq!
         inherits_abilities_from_many as, :id
@@ -36,9 +39,7 @@ module Mongoidable
       def inherits_abilities_from(relation)
         return unless valid_singular_relation?(relation)
 
-        relations_dirty_tracking_options[:only] << relation
-        relations_dirty_tracking_options[:enabled] = true
-        trackable                                  = { name: relation }
+        trackable = { name: relation, type: :singular }
         inherits_from << trackable
         inherits_from.uniq! { |item| item[:name] }
       end
@@ -46,11 +47,25 @@ module Mongoidable
       def inherits_abilities_from_many(relation, order_by, direction = :asc)
         return unless valid_many_relation?(relation)
 
-        relations_dirty_tracking_options[:only] << relation
-        relations_dirty_tracking_options[:enabled] = true
-        trackable                                  = { name: relation, order_by: order_by, direction: direction }
+        trackable = { name: relation, order_by: order_by, direction: direction, type: :many }
         inherits_from << trackable
         inherits_from.uniq! { |item| item[:name] }
+      end
+
+      def before_abilities(type, &block)
+        before_callbacks[type] << block
+      end
+
+      def after_abilities(type, &block)
+        after_callbacks[type] << block
+      end
+
+      def after_callbacks
+        @after_callbacks ||= { inherited: [], ancestral: [], instance: [] }
+      end
+
+      def before_callbacks
+        @before_callbacks ||= { inherited: [], ancestral: [], instance: [] }
       end
 
       private
@@ -83,6 +98,8 @@ module Mongoidable
           relation.is_a?(singleton_class)
         end
       end
+
+      memoize :ancestral_abilities
     end
     # rubocop:enable Metrics/BlockLength
   end

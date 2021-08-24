@@ -4,6 +4,7 @@ module Mongoidable
   class Configuration
     attr_accessor :ability_class,
                   :context_module,
+                  :enable_caching,
                   :load_path,
                   :policy_collection,
                   :policy_class,
@@ -17,6 +18,7 @@ module Mongoidable
     def initialize
       @ability_class = "Mongoidable::Ability"
       @context_module = nil
+      @enable_caching = true
       @load_path = "app/models/abilities/**/*.rb"
       @policy_collection = :mongoidable_policies
       @policy_class = "Mongoidable::Policy"

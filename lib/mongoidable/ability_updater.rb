@@ -2,6 +2,7 @@
 
 module Mongoidable
   class AbilityUpdater
+    extend Memoist
     attr_accessor :instance_abilities, :arguments, :parent_document
 
     def initialize(parent_document, arguments)
@@ -25,7 +26,7 @@ module Mongoidable
     end
 
     def destroy_ability
-      database_ability.destroy
+      instance_abilities.delete database_ability
     end
 
     def create_ability
@@ -95,8 +96,10 @@ module Mongoidable
         key  = "_id" if key.to_s == "id"
         type = object.fields[key].type
         if type == Array
-          many_to_many_relation = object.relations.detect { |_name, relation| relation.key == key && relation.is_a?(Mongoid::Association::Referenced::HasAndBelongsToMany) }
-          value                 = Array.wrap(value)
+          many_to_many_relation = object.relations.detect do |_name, relation|
+            relation.key == key && relation.is_a?(Mongoid::Association::Referenced::HasAndBelongsToMany)
+          end
+          value = Array.wrap(value)
 
           if many_to_many_relation
             relation_name = many_to_many_relation.first
@@ -114,5 +117,15 @@ module Mongoidable
         end
       end
     end
+    memoize :database_ability,
+            :should_update?,
+            :ability_exists?,
+            :ability_representation,
+            :create_attributes,
+            :base_behavior,
+            :extra,
+            :subject,
+            :subject_as_class,
+            :ability_type
   end
 end

@@ -85,13 +85,4 @@ RSpec.describe Mongoidable::Abilities do
       expect(rule.instance_variable_get(:@rule_type)).to eq :adhoc
     end
   end
-
-  describe "reset" do
-    it "resets rules and rule indexes" do
-      abilities = described_class.new("test", nil)
-      abilities.reset
-      expect(abilities.instance_variable_get(:@rules)).to be_nil
-      expect(abilities.instance_variable_get(:@rules_index)).to be_nil
-    end
-  end
 end

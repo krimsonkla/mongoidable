@@ -3,6 +3,8 @@
 module Mongoidable
   # Defines methods necessary to add and remove instance abilities
   module InstanceAbilities
+    extend Memoist
+
     private
 
     def mongoidable_identity
@@ -23,5 +25,7 @@ module Mongoidable
       end
       own_abilities
     end
+
+    memoize :own_abilities
   end
 end

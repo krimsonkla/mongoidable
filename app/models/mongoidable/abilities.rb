@@ -3,16 +3,19 @@
 # The class that holds all abilities on classes, instances and adhoc
 module Mongoidable
   class Abilities
+    extend Memoist
     include ::CanCan::Ability
     include Mongoidable::CaslList
 
     attr_reader :ability_source, :parent_model
     attr_accessor :rule_type
 
-    def initialize(ability_source, parent_model)
+    def initialize(ability_source, parent_model, event_subscriptions = nil)
       @parent_model = parent_model
       @ability_source = ability_source
       @rule_type = :adhoc
+      @events = event_subscriptions
+      @rules_index ||= {}
     end
 
     def cannot(action = nil, subject = nil, *attributes_and_conditions, &block)
@@ -25,10 +28,10 @@ module Mongoidable
       super(action, subject, *extra, &block)
     end
 
-    def reset
-      @rules = nil
-      @rules_index = nil
+    def empty_clone
+      Mongoidable::Abilities.new(ability_source, parent_model, events)
     end
+
 
     private
 

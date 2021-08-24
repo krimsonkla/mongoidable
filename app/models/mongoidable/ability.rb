@@ -3,6 +3,7 @@
 module Mongoidable
   # A mongoid document used to store adhoc abilities.
   class Ability
+    extend Memoist
     include ::Mongoid::Document
 
     attr_accessor :check_block
@@ -25,8 +26,8 @@ module Mongoidable
     validates :base_behavior, presence: true
 
     embedded_in :instance_abilities
-    after_destroy :touch_parent
-    after_save :touch_parent
+    after_destroy :after_action
+    after_save :after_action
 
     def description
       I18n.t("mongoidable.ability.description.#{action}", subject: self[:subject])
@@ -59,7 +60,8 @@ module Mongoidable
 
     private
 
-    def touch_parent
+    def after_action
+      _parent.renew_abilities(types: :instance)
       _parent.touch
     end
 
@@ -83,13 +85,11 @@ module Mongoidable
       end
 
       def all
-        return @all if @all.present?
-
         Dir[Rails.root.join(config.load_path)].sort.each { |file| require file }
 
         namespace = config.ability_class.deconstantize.constantize
 
-        @all = load_namespace(namespace).flatten
+        load_namespace(namespace).flatten
       end
 
       def ability
@@ -118,8 +118,6 @@ module Mongoidable
       def config
         Mongoidable.configuration
       end
-
-      memoize :all
     end
   end
 end
