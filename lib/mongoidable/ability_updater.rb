@@ -43,9 +43,13 @@ module Mongoidable
       can_args = if subject_as_class.is_a?(Symbol) || extra.blank?
                    [action, subject_as_class]
                  else
-                   subject = subject_as_class.new
-                   transform_values(subject, extra.first)
-                   [action, subject]
+                   subject                   = subject_as_class.new
+                   attributes_and_conditions = Mongoidable::Ability.attributes_and_conditions(extra)
+                   first_extra               = attributes_and_conditions[1].first
+
+                   transform_values(subject, first_extra) if first_extra
+
+                   [action, subject, attributes_and_conditions[0].first].compact
                  end
       parent_document.current_ability.can?(*can_args) != base_behavior
     end
@@ -92,6 +96,8 @@ module Mongoidable
     end
 
     def transform_values(object, hash)
+      return unless hash.respond_to?(:each)
+
       hash.each do |key, value|
         key  = "_id" if key.to_s == "id"
         type = object.fields[key].type
