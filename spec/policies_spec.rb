@@ -36,8 +36,10 @@ RSpec.describe "policies", :with_abilities do
                            Mongoidable::PolicyRelation.new(requirements: { id: 1 }, policy: policy)
                        ])
 
+    expect(user.policies[0].policy.instance_abilities[0].extra[0][:id]).to eq "merge|id"
     expect(user.current_ability).to be_can(:test, User.new(id: 1))
     expect(user.current_ability).to be_cannot(:test, User.new(id: 2))
+    expect(user.policies[0].policy.instance_abilities[0].extra[0][:id]).to eq "merge|id"
   end
 
   it "generates correct current_abilities with attributes" do
@@ -54,7 +56,9 @@ RSpec.describe "policies", :with_abilities do
                            Mongoidable::PolicyRelation.new(requirements: { id: 1 }, policy: policy)
                        ])
 
+    expect(user.policies[0].policy.instance_abilities[0].extra[1][:id]).to eq "merge|id"
     expect(user.current_ability).to be_can(:test, User.new(id: 1), :name)
     expect(user.current_ability).to be_cannot(:test, User.new(id: 2), :name)
+    expect(user.policies[0].policy.instance_abilities[0].extra[1][:id]).to eq "merge|id"
   end
 end
